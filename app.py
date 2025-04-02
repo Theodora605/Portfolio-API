@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request, abort, session
 from flask_restful import Api, Resource
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from flask_bcrypt import Bcrypt
 from flask_session import Session
 
@@ -12,7 +12,7 @@ from sqlalchemy import event
 
 app = Flask(__name__)
 app.config.from_object(ApplicationConfig)
-CORS(app)
+CORS(app, supports_credentials=True)
 
 api = Api(app)
 bcrypt = Bcrypt(app)
@@ -218,6 +218,7 @@ api.add_resource(ProjectsResource, "/projects")
 api.add_resource(ProjectResource, "/projects/<id>")
 
 @app.route("/login", methods=["POST"])
+@cross_origin(supports_credentials=True)
 def login_moderator():
     data = request.get_json()
 
