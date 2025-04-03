@@ -147,6 +147,28 @@ class ProjectsResource(Resource):
 
 class ProjectResource(Resource):
 
+    def get(self, id):
+        project = Project.query.get_or_404(id)
+
+        techs = []
+        for t in project.technologies:
+            techs.append({
+                "id": t.id,
+                "img_uri": t.img_uri,
+                "description": t.description
+            })
+
+        return jsonify({
+            "id": project.id,
+            "name": project.name,
+            "description": project.description,
+            "img_uri": project.img_uri,
+            "server_endpoint": project.server_endpoint,
+            "github_url": project.github_url,
+            "demo_url": project.demo_url,
+            "technologies": techs
+        })
+
     def put(self, id):
 
         if "user_id" not in session:
