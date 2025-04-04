@@ -213,6 +213,15 @@ class ProjectResource(Resource):
                 oldTech.img_uri = t['img_uri']
                 db.session.commit()
         
+        oldProject.name = data['name']
+        oldProject.description = data['description']
+        oldProject.server_endpoint = data['server_endpoint']
+        oldProject.img_uri = data['img_uri']
+        oldProject.github_url = data['github_url']
+        oldProject.demo_url = data['demo_url']
+
+        db.session.commit()
+
         return jsonify({
             "message": f"Project {id} has been updated."
         })
