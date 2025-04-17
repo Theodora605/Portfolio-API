@@ -24,9 +24,16 @@ class Project(db.Model):
     server_endpoint: Mapped[str] = mapped_column(nullable=False)
     github_url: Mapped[str] = mapped_column(nullable=False)
     demo_url: Mapped[str] = mapped_column(nullable=True)
+    active: Mapped[bool] = mapped_column(nullable=False)
 
     # Relationships
     technologies: Mapped[List["Technology"]] = relationship(
+        back_populates = "project", 
+        cascade = "all, delete",
+        passive_deletes = True
+        )
+    
+    gallery_images: Mapped[List["GalleryImage"]] = relationship(
         back_populates = "project", 
         cascade = "all, delete",
         passive_deletes = True
@@ -43,3 +50,14 @@ class Technology(db.Model):
 
     # Relationships
     project: Mapped["Project"] = relationship(back_populates="technologies")
+
+class GalleryImage(db.Model):
+    __tablename__ = "gallery_images"
+
+    # Schema
+    id: Mapped[int] = mapped_column(primary_key=True)
+    img_uri: Mapped[str] = mapped_column(nullable=False)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"))
+
+    # Relationships
+    project: Mapped["Project"] = relationship(back_populates="gallery_images")

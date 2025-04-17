@@ -5,7 +5,7 @@ from flask_bcrypt import Bcrypt
 from flask_session import Session
 
 from config import ApplicationConfig
-from models import db, Moderator, Project, Technology
+from models import db, Moderator, Project, Technology, GalleryImage
 
 from sqlalchemy.engine import Engine
 from sqlalchemy import event
@@ -96,6 +96,13 @@ class ProjectsResource(Resource):
                     "description": tech.description
                 })
 
+            gallery_images = []
+            for gall_item in project.gallery_images:
+                gallery_images.append({
+                    "id": gall_item.id,
+                    "img_uri": gall_item.img_uri
+                })
+
             res.append({
                 "id": project.id,
                 "name": project.name,
@@ -104,7 +111,9 @@ class ProjectsResource(Resource):
                 "server_endpoint": project.server_endpoint,
                 "github_url": project.github_url,
                 "demo_url": project.demo_url,
-                "technologies": technologies
+                "active": project.active,
+                "technologies": technologies,
+                "gallery_images": gallery_images
             })
 
         return jsonify(res)
@@ -121,12 +130,13 @@ class ProjectsResource(Resource):
         img_uri = data['img_uri']
         server_endpoint = data['server_endpoint']
         github_url = data['github_url']
+        active = data['active']
         
         demo_url = None
         if 'demo_url' in data:
             demo_url = data['demo_url']
 
-        project = Project(name=name, description=description, img_uri=img_uri, server_endpoint=server_endpoint, github_url=github_url, demo_url=demo_url)
+        project = Project(name=name, description=description, img_uri=img_uri, server_endpoint=server_endpoint, github_url=github_url, demo_url=demo_url, active=active)
 
         db.session.add(project)
         db.session.commit()
@@ -136,6 +146,14 @@ class ProjectsResource(Resource):
         for t in technologies:
             tech = Technology(img_uri=t['img_uri'], description=t['description'], project_id=project.id)
             db.session.add(tech)
+
+        db.session.commit()
+
+        gallery_images = data['gallery_images']
+
+        for gall_item in gallery_images:
+            newItem = GalleryImage(img_uri=gall_item['img_uri'], project_id=project.id)
+            db.session.add(newItem)
 
         db.session.commit()
 
@@ -158,6 +176,13 @@ class ProjectResource(Resource):
                 "description": t.description
             })
 
+        gallery_images = []
+        for gall_item in project.gallery_images:
+            gallery_images.append({
+                "id": gall_item.id,
+                "img_uri": gall_item.img_uri
+            })
+
         return jsonify({
             "id": project.id,
             "name": project.name,
@@ -166,7 +191,9 @@ class ProjectResource(Resource):
             "server_endpoint": project.server_endpoint,
             "github_url": project.github_url,
             "demo_url": project.demo_url,
-            "technologies": techs
+            "active": project.active,
+            "technologies": techs,
+            "gallery_images": gallery_images
         })
 
     def put(self, id):
@@ -188,6 +215,7 @@ class ProjectResource(Resource):
         # id missing from newTech => delete the entry
         # otherwise, update the entry 
 
+        # Updating changes to technologies
         new_tech_ids = set([])
         for t in newTech:
             new_tech_ids.add(t['id'])
@@ -212,6 +240,28 @@ class ProjectResource(Resource):
                 oldTech.description = t['description']
                 oldTech.img_uri = t['img_uri']
                 db.session.commit()
+
+        new_gall = data["gallery_images"]
+        new_gall_ids = set([])
+        for gall_item in new_gall:
+            new_gall_ids.add(gall_item["id"])
+
+        for gall_item in oldProject.gallery_images:
+            if gall_item.id not in new_gall_ids:
+                removed_gall_item = GalleryImage.query.get_or_404(gall_item.id)
+                db.session.delete(removed_gall_item)
+                db.session.commit()
+
+        for gall_item in new_gall:
+            if gall_item['id'] is None:
+                new_gall_item = GalleryImage(img_uri=gall_item['img_uri'], project_id=oldProject.id)
+                db.session.add(new_gall_item)
+                db.session.commit()
+
+            else:
+                updated_gall_item = GalleryImage.query.get_or_404(gall_item['id'])
+                updated_gall_item.img_uri = gall_item['img_uri']
+                db.session.commit()
         
         oldProject.name = data['name']
         oldProject.description = data['description']
@@ -219,6 +269,7 @@ class ProjectResource(Resource):
         oldProject.img_uri = data['img_uri']
         oldProject.github_url = data['github_url']
         oldProject.demo_url = data['demo_url']
+        oldProject.active = data['active']
 
         db.session.commit()
 
