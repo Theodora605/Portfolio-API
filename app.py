@@ -3,12 +3,15 @@ from flask_restful import Api, Resource
 from flask_cors import CORS, cross_origin
 from flask_bcrypt import Bcrypt
 from flask_session import Session
+from google.cloud import storage
 
 from config import ApplicationConfig
 from models import db, Moderator, Project, Technology, GalleryImage
 
-from sqlalchemy.engine import Engine
-from sqlalchemy import event
+import os
+
+GCS_CV_BUCKET = "theo-cv"
+GCS_CV_FILENAME = "theo_goossens.pdf"
 
 app = Flask(__name__)
 app.config.from_object(ApplicationConfig)
@@ -344,6 +347,31 @@ def check_logged_in():
     return jsonify({
         "message": f"Logged in as {user.username}."
     })
+
+@app.route("/cv", methods=["POST"])
+def upload_cv():
+
+    if "user_id" not in session:
+        abort(401)
+
+    file = request.files['cv']
+    temp_file = f'./temp/{GCS_CV_FILENAME}'
+    file.save(temp_file)
+    url = gcs_upload(temp_file, GCS_CV_BUCKET)
+    os.remove(temp_file)
+
+    return jsonify({
+        "url": url
+    })
+
+    
+def gcs_upload(file_path:str, bucket_name:str ):
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(file_path.split("/")[-1])
+    blob.upload_from_filename(file_path)
+    blob.make_public()
+    return blob.public_url
 
 if __name__ == "__main__":
     app.run(debug=True)
