@@ -413,6 +413,7 @@ def gcs_upload(file_path:str, bucket_name:str ):
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(file_path.split("/")[-1])
+    blob.cache_control = "private,max-age=0,no-store"
     blob.upload_from_filename(file_path)
     blob.make_public()
     return blob.public_url
