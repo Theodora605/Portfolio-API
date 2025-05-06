@@ -1,0 +1,1 @@
+This is a folder for temporary storage of files to be uploaded to GCS. Do not delete.
