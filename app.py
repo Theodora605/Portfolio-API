@@ -88,7 +88,16 @@ class ModeratorResource(Resource):
 
 class ProjectsResource(Resource):
     def get(self):
-        projects = Project.query.all()
+        demo_url = request.args.get('demo')
+        name = request.args.get('name')
+
+        q = Project.query
+        if demo_url:
+            q = q.filter_by(demo_url=demo_url)
+        if name:
+            q = q.filter_by(name=name)
+        projects = q.all()
+
         res = []
         for project in projects:
             technologies = []
@@ -347,50 +356,6 @@ def check_logged_in():
     return jsonify({
         "message": f"Logged in as {user.username}."
     })
-
-@app.route("/projects/query", methods=['GET'])
-def query_projects():
-    demo_url = request.args.get('demo')
-    name = request.args.get('name')
-
-    q = Project.query
-    if demo_url:
-        q = q.filter_by(demo_url=demo_url)
-    if name:
-        q = q.filter_by(name=name)
-
-    res = []
-    projects = q.all()
-    for project in projects:
-        techs = []
-        for t in project.technologies:
-            techs.append({
-                "id": t.id,
-                "img_uri": t.img_uri,
-                "description": t.description
-            })
-
-        gallery_images = []
-        for gall_item in project.gallery_images:
-            gallery_images.append({
-                "id": gall_item.id,
-                "img_uri": gall_item.img_uri
-            })
-
-        res.append({
-            "id": project.id,
-            "name": project.name,
-            "description": project.description,
-            "img_uri": project.img_uri,
-            "server_endpoint": project.server_endpoint,
-            "github_url": project.github_url,
-            "demo_url": project.demo_url,
-            "active": project.active,
-            "technologies": techs,
-            "gallery_images": gallery_images
-        })
-
-    return jsonify(res)
 
 @app.route("/cv", methods=["POST"])
 def upload_cv():
